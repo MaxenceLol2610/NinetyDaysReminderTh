@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   AwesomeNotifications().initialize(
@@ -47,6 +48,12 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime? _onlineFromDate;
   DateTime? _onlineToDate;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadArrivalDate();
+  }
+
   void _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
         context: context,
@@ -58,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _arrivalDate = picked;
         _calculateDates();
         _scheduleNotifications();
+        _saveArrivalDate(picked);
       });
     }
   }
@@ -73,9 +81,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _scheduleNotifications() {
+  Future<void> _scheduleNotifications() async {
     if (_mailDate != null) {
-      AwesomeNotifications().createNotification(
+      await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 1,
           channelKey: 'basic_channel',
@@ -86,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
     if (_inPersonFromDate != null) {
-      AwesomeNotifications().createNotification(
+      await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 2,
           channelKey: 'basic_channel',
@@ -97,7 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
     if (_onlineFromDate != null) {
-      AwesomeNotifications().createNotification(
+      await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 3,
           channelKey: 'basic_channel',
@@ -107,6 +115,22 @@ class _MyHomePageState extends State<MyHomePage> {
         schedule: NotificationCalendar.fromDate(date: _onlineFromDate!),
       );
     }
+  }
+
+  Future<void> _loadArrivalDate() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? arrivalDateString = prefs.getString('arrivalDate');
+    if (arrivalDateString != null) {
+      setState(() {
+        _arrivalDate = DateTime.parse(arrivalDateString);
+        _calculateDates();
+      });
+    }
+  }
+
+  Future<void> _saveArrivalDate(DateTime date) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('arrivalDate', date.toIso8601String());
   }
 
   @override
